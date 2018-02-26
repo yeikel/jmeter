@@ -24,12 +24,14 @@ import javax.script.Bindings;
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 
+import org.apache.jmeter.gui.GUIMenuSortOrder;
 import org.apache.jmeter.samplers.SampleResult;
 import org.apache.jmeter.testbeans.TestBean;
 import org.apache.jmeter.util.JSR223TestElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@GUIMenuSortOrder(4)
 public class JSR223Assertion extends JSR223TestElement implements Cloneable, Assertion, TestBean
 {
     private static final Logger log = LoggerFactory.getLogger(JSR223Assertion.class);
@@ -44,12 +46,7 @@ public class JSR223Assertion extends JSR223TestElement implements Cloneable, Ass
             Bindings bindings = scriptEngine.createBindings();
             bindings.put("SampleResult", response);
             bindings.put("AssertionResult", result);
-            try {
-                processFileOrScript(scriptEngine, bindings);
-            } catch (AssertionError ae) { // NOSONAR We don't want to log the exception as it is handled 
-                result.setFailure(true);
-                result.setFailureMessage(ae.toString());
-            }
+            processFileOrScript(scriptEngine, bindings);
             result.setError(false);
         } catch (IOException | ScriptException e) {
             log.error("Problem in JSR223 script: {}", getName(), e);
@@ -58,7 +55,7 @@ public class JSR223Assertion extends JSR223TestElement implements Cloneable, Ass
         }
         return result;
     }
-    
+
     @Override
     public Object clone() {
         return super.clone();

@@ -52,17 +52,16 @@ import org.apache.jmeter.samplers.SampleResult;
 import org.apache.jmeter.testelement.TestElement;
 import org.apache.jmeter.threads.JMeterContextService;
 import org.apache.jmeter.util.JMeterUtils;
-import org.slf4j.LoggerFactory;
 import org.apache.jorphan.util.JMeterException;
 import org.apache.jorphan.util.JOrphanUtils;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Thread to handle one client request. Gets the request from the client and
  * passes it on to the server, then sends the response back to the client.
  * Information about the request and response is stored so it can be used in a
  * JMeter test plan.
- *
  */
 public class Proxy extends Thread {
     private static final Logger log = LoggerFactory.getLogger(Proxy.class);
@@ -161,8 +160,8 @@ public class Proxy extends Thread {
     public void run() {
         // Check which HTTPSampler class we should use
         String httpSamplerName = target.getSamplerTypeName();
-
-        HttpRequestHdr request = new HttpRequestHdr(target.getPrefixHTTPSampleName(), httpSamplerName);
+        
+        HttpRequestHdr request = new HttpRequestHdr(target.getPrefixHTTPSampleName(), httpSamplerName,target.getHTTPSampleNamingMode());
         SampleResult result = null;
         HeaderManager headers = null;
         HTTPSamplerBase sampler = null;
@@ -185,7 +184,8 @@ public class Proxy extends Thread {
             if ((request.getMethod().startsWith(HTTPConstants.CONNECT)) && (outStreamClient != null)) {
                 log.debug("{} Method CONNECT => SSL", port);
                 // write a OK response to browser, to engage SSL exchange
-                outStreamClient.write(("HTTP/1.0 200 OK\r\n\r\n").getBytes(SampleResult.DEFAULT_HTTP_ENCODING)); // $NON-NLS-1$
+                outStreamClient.write(
+                        "HTTP/1.0 200 OK\r\n\r\n".getBytes(SampleResult.DEFAULT_HTTP_ENCODING)); // $NON-NLS-1$
                 outStreamClient.flush();
                // With ssl request, url is host:port (without https:// or path)
                 String[] param = request.getUrl().split(":");  // $NON-NLS-1$
@@ -203,9 +203,10 @@ public class Proxy extends Thread {
                 } catch (IOException ioe) { // most likely this is because of a certificate error
                     // param.length is 2 here
                     final String url = " for '"+ param[0] +"'";
-                    log.warn("{} Problem with SSL certificate for url {}? Ensure browser is set to accept the JMeter proxy cert: {}", 
+                    log.warn("{} Problem with SSL certificate for url {}? Ensure browser is set to accept the JMeter proxy cert: {}",
                             port, url,ioe.getMessage());
-                    result = generateErrorResult(result, request, ioe, "\n**ensure browser is set to accept the JMeter proxy certificate**"); // Generate result (if nec.) and populate it
+                    // Generate result (if nec.) and populate it
+                    result = generateErrorResult(result, request, ioe, "\n**ensure browser is set to accept the JMeter proxy certificate**");
                     throw new JMeterException(); // hack to skip processing
                 }
                 if (isDebug) {
@@ -249,9 +250,10 @@ public class Proxy extends Thread {
             result = generateErrorResult(result, request, uhe); // Generate result (if nec.) and populate it
         } catch (IllegalArgumentException e) {
             log.error("{} Not implemented (probably used https)", port, e);
-            writeErrorToClient(HttpReplyHdr.formNotImplemented("Probably used https instead of http. " +
-                    "To record https requests, see " +
-                    "<a href=\"http://jmeter.apache.org/usermanual/component_reference.html#HTTP(S)_Test_Script_Recorder\">HTTP(S) Test Script Recorder documentation</a>"));
+            writeErrorToClient(HttpReplyHdr.formNotImplemented("Probably used https instead of http. "
+                    + "To record https requests, see "
+                    + "<a href=\"http://jmeter.apache.org/usermanual/component_reference.html#HTTP(S)_Test_Script_Recorder\">"
+                    + "HTTP(S) Test Script Recorder documentation</a>"));
             result = generateErrorResult(result, request, e); // Generate result (if nec.) and populate it
         } catch (Exception e) {
             log.error("{} Exception when processing sample", port, e);

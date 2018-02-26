@@ -19,9 +19,10 @@
 package org.apache.jmeter.gui;
 
 import java.io.Serializable;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
-import java.util.Stack;
 
 import javax.swing.event.TreeModelEvent;
 import javax.swing.event.TreeModelListener;
@@ -43,9 +44,7 @@ import org.slf4j.LoggerFactory;
  * @since 2.12
  */
 public class UndoHistory implements TreeModelListener, Serializable {
-    /**
-     * 
-     */
+
     private static final long serialVersionUID = 1L;
     
     /**
@@ -59,19 +58,15 @@ public class UndoHistory implements TreeModelListener, Serializable {
 
     private static final int HISTORY_SIZE = JMeterUtils.getPropDefault("undo.history.size", 0);
 
-    /**
-     * flag to prevent recursive actions
-     */
+    /** flag to prevent recursive actions */
     private boolean working = false;
 
-    /**
-     * History listeners
-     */
+    /** History listeners */
     private List<HistoryListener> listeners = new ArrayList<>();
 
     private final UndoManager manager = new UndoManager();
 
-    private final Stack<SimpleCompoundEdit> transactions = new Stack<>();
+    private final Deque<SimpleCompoundEdit> transactions = new ArrayDeque<>();
 
     private UndoHistoryItem lastKnownState = null;
 
@@ -325,7 +320,7 @@ public class UndoHistory implements TreeModelListener, Serializable {
     }
 
     void beginUndoTransaction() {
-        if(isEnabled()) {
+        if (isEnabled()) {
             transactions.add(new SimpleCompoundEdit());
         }
     }

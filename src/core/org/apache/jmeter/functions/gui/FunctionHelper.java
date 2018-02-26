@@ -45,6 +45,7 @@ import org.apache.jmeter.config.gui.ArgumentsPanel;
 import org.apache.jmeter.engine.ClientJMeterEngine;
 import org.apache.jmeter.engine.util.CompoundVariable;
 import org.apache.jmeter.functions.Function;
+import org.apache.jmeter.gui.action.ActionNames;
 import org.apache.jmeter.gui.action.ActionRouter;
 import org.apache.jmeter.gui.action.Help;
 import org.apache.jmeter.gui.action.KeyStrokes;
@@ -56,6 +57,7 @@ import org.apache.jmeter.util.JMeterUtils;
 import org.apache.jmeter.util.LocaleChangeEvent;
 import org.apache.jmeter.util.LocaleChangeListener;
 import org.apache.jorphan.gui.ComponentUtil;
+import org.apache.jorphan.gui.GuiUtils;
 import org.apache.jorphan.gui.JLabeledChoice;
 import org.apache.jorphan.gui.JLabeledTextField;
 import org.slf4j.Logger;
@@ -135,7 +137,7 @@ public class FunctionHelper extends JDialog implements ActionListener, ChangeLis
 
     private void initializeFunctionList() {
         String[] functionNames = CompoundVariable.getFunctionNames();
-        Arrays.sort(functionNames, (o1, o2) -> o1.compareToIgnoreCase(o2));
+        Arrays.sort(functionNames, String::compareToIgnoreCase);
         functionList = new JLabeledChoice(JMeterUtils.getResString("choose_function"), functionNames); //$NON-NLS-1$
         functionList.addChangeListener(this);
     }
@@ -151,13 +153,14 @@ public class FunctionHelper extends JDialog implements ActionListener, ChangeLis
             this.validate();
             resultTextArea.setText("");
             this.repaint();
-        } catch (InstantiationException | IllegalAccessException e) {
+        } catch (InstantiationException | IllegalAccessException ex) {
+            log.info("Exception during stateChanged", ex);
         }
     }
 
     /**
-     * @throws InstantiationException if function instanciation fails
-     * @throws IllegalAccessException if function instanciation fails
+     * @throws InstantiationException if function instantiation fails
+     * @throws IllegalAccessException if function instantiation fails
      */
     protected void initParameterPanel() throws InstantiationException, IllegalAccessException {
         Arguments args = new Arguments();
@@ -191,6 +194,7 @@ public class FunctionHelper extends JDialog implements ActionListener, ChangeLis
         }
         functionCall.append("}");
         cutPasteFunction.setText(functionCall.toString());
+        GuiUtils.copyTextToClipboard(cutPasteFunction.getText());
         CompoundVariable function = new CompoundVariable(functionCall.toString());
         try {
             resultTextArea.setText(function.execute().trim());
@@ -206,8 +210,9 @@ public class FunctionHelper extends JDialog implements ActionListener, ChangeLis
         @Override
         public void actionPerformed(ActionEvent e) {
             String[] source = new String[] { Help.HELP_FUNCTIONS, functionList.getText() };
-            ActionEvent helpEvent = new ActionEvent(source, e.getID(), "help"); //$NON-NLS-1$
-            ActionRouter.getInstance().actionPerformed(helpEvent);
+            ActionRouter.getInstance().doActionNow(
+                    new ActionEvent(source, e.getID(), ActionNames.HELP));
+
         }
     }
 
